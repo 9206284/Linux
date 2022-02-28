@@ -1,10 +1,15 @@
-[TOC]
 
 
 # Ubuntu基础文档
 
+
+
+[Toc]
+
 ## 一：Debian与Ubuntu简介
+
 ### 1.1：Debian简介
+
 是从 1993 年由 Ian Murdock(伊恩·默多克) 发起的，受到当时 Linux 与 GNU 的⿎舞，⽬标是成为⼀个公开的发⾏ 版，经过⼆⼗⼏年的迭代更新Debian 从⼀个⼩型紧密的⾃由软件骇客（hacker）⼩组，逐渐成⻓成今⽇庞⼤且运 作良好的开发者与⽤户社群，Debian 的名字是由 Debian 的创始⼈ Ian Murdock (伊恩·默多克) 和他的爱妻 Debra(黛布拉) 两⼈的名字组合⽽成的。
 
 Debian 是由⼤约⼀千个分布在世界各地的开发者⽆偿地利⽤他们的业余时间开发的，⽽这些开发者实际上⼤部分 都没⻅过⾯，彼此之间的通讯⼤多是通过电⼦邮件（lists.debian.org 上的邮件列表）和 IRC（irc.debian.org 上的 #debian 频道）来完成的，⽬前Debian 提供59000多个软件包的维护与更新。
@@ -47,13 +52,14 @@ preinstalled-server-arm64+raspi3  		预安装树莓派系列
 ![安装界面传递内核参数](https://raw.githubusercontent.com/9206284/Linux/main/img/20220207223836.png)
 
 ### 2.2: Ubuntu Server系统基础配置
-Ubuntu官方使用文档  
+Ubuntu官方帮助文档  
 https://help.ubuntu.com
 #### 2.2.1：更改主机名
 ```shell
 hostnamectl set-hostname ubuntu01
 ```
-#### 2.2.2：更改网卡名称为eth*:
+#### 2.2.2：更改网卡名称为eth*
+
 如果没有在安装系统之前传递内核参数将⽹卡名称更改为eth*，则可以在安装系统之后修改/etc/default/grub ：
 ```shell
 vim /etc/default/grub 
@@ -70,8 +76,8 @@ sed -i  's/^GRUB_CMDLINE_LINUX=""$/GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname
 
 ```shell
 update-grub
-
 reboot
+
 ```
 #### 2.2.3：配置root远程登录
 默认情况下，ubuntu不允许root⽤户远程ssh，如果有实际场景需要允许root⽤户远程ssh，则需要设置root密 码，并且编辑/etc/ssh/sshd_config⽂件修改如下：
@@ -97,6 +103,7 @@ passwd: password updated successfully
 systemctl restart sshd 
 ```
 #### 2.2.4: Ubuntu 18.04以上网络配置
+
 netplan官网 https://netplan.io/  
 netplan官方范例 https://netplan.io/examples/
 
@@ -196,7 +203,9 @@ network:
               metric: 300
 ```
 dhcp的地址metric值默认100
+
 ##### 2.2.4.5: 多网卡静态
+
 ```yaml
 network:
   version: 2
@@ -505,10 +514,12 @@ network:
 ### 2.3: Ubuntu软件包管理
 
 ubuntu安装、升级、卸载软件包等常规操作。
+
 #### 2.3.1: 可选软件仓库
-阿⾥云仓库地址：https://opsx.alibaba.com/mirror 
 
 中科⼤：http://mirrors.ustc.edu.cn/help/ubuntu.html
+
+阿⾥云仓库地址：https://opsx.alibaba.com/mirror 
 
 清华⼤学：https://mirror.tuna.tsinghua.edu.cn/help/ubuntu/ 
 
@@ -757,4 +768,13 @@ $ sudo vim /etc/init.d/vmware
 131 chown magedu /dev/vmnet* 
 132 chmod a+rwx /dev/vmnet* 
 133 }
+
+18、安装桌面
+sudo apt install xinit
+#输入命令 startx 进入图形界面, 图形切回命令行 ctrl + alt + F7
+#开机默认进入命令行模式 	sudo systemctl set-default multi-user.target 
+
+#开机默认进入图形模式  sudo systemctl set-default graphical.target 
+#进入命令行模式 ctrl + alt + F2，从命令行切换到图形界面：ctrl + alt + F7。
+
 ```
