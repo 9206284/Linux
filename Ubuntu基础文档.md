@@ -48,6 +48,7 @@ preinstalled-server-arm64+raspi3  		预安装树莓派系列
 ## 二：Ubuntu Server安装及使用
 ### 2.1: Ubuntu Server安装
 #### 2.1.1 安装界面传递内核参数
+
 <font color=blue>按 **F6** 输入 **net.ifnames=0 biosdevname=0** </font>
 ![安装界面传递内核参数](https://raw.githubusercontent.com/9206284/Linux/main/img/20220207223836.png)
 
@@ -87,6 +88,9 @@ vim /etc/ssh/sshd_config
 
 PermitRootLogin yes #改为允许Root登录
 PasswordAuthentication yes #打开密码认证，其实默认就是允许通过密码认证登录
+
+PubkeyAuthentication yes #启用密钥认证
+PasswordAuthentication no #关闭密码认证
 ```
 
 ```shell
@@ -519,12 +523,18 @@ ubuntu安装、升级、卸载软件包等常规操作。
 
 中科⼤：http://mirrors.ustc.edu.cn/help/ubuntu.html
 
+```shell
+sudo sed -i 's/archive.ubuntu.com/mirrors.ustc.edu.cn/g' /etc/apt/sources.list
+```
+
 阿⾥云仓库地址：https://opsx.alibaba.com/mirror 
 
 清华⼤学：https://mirror.tuna.tsinghua.edu.cn/help/ubuntu/ 
 
 华为：https://mirrors.huaweicloud.com/
+
 #### 2.3.2: apt/apt-get
+
 ```shell
 # apt list #apt列出仓库软件包，等于yum list 
 # apt search NAME #搜索安装包 
@@ -770,7 +780,7 @@ $ sudo vim /etc/init.d/vmware
 133 }
 
 18、安装桌面
-sudo apt install xinit
+sudo apt install xinit ubuntu-desktop
 #输入命令 startx 进入图形界面, 图形切回命令行 ctrl + alt + F7
 #开机默认进入命令行模式 	sudo systemctl set-default multi-user.target 
 
