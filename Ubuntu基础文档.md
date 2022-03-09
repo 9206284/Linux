@@ -10,7 +10,7 @@
 
 ### 1.1：Debian简介
 
-是从 1993 年由 Ian Murdock(伊恩·默多克) 发起的，受到当时 Linux 与 GNU 的⿎舞，⽬标是成为⼀个公开的发⾏ 版，经过⼆⼗⼏年的迭代更新Debian 从⼀个⼩型紧密的⾃由软件骇客（hacker）⼩组，逐渐成⻓成今⽇庞⼤且运 作良好的开发者与⽤户社群，Debian 的名字是由 Debian 的创始⼈ Ian Murdock (伊恩·默多克) 和他的爱妻 Debra(黛布拉) 两⼈的名字组合⽽成的。
+是从 1993 年由 Ian Murdock(伊恩·默多克) 发起的，受到当时 Linux 与 GNU 的⿎舞，⽬标是成为⼀个公开的发⾏版，经过⼆⼗⼏年的迭代更新Debian 从⼀个⼩型紧密的⾃由软件骇客（hacker）⼩组，逐渐成⻓成今⽇庞⼤且运作良好的开发者与⽤户社群，Debian 的名字是由 Debian 的创始⼈ Ian Murdock (伊恩·默多克) 和他的爱妻 Debra(黛布拉) 两⼈的名字组合⽽成的。
 
 Debian 是由⼤约⼀千个分布在世界各地的开发者⽆偿地利⽤他们的业余时间开发的，⽽这些开发者实际上⼤部分 都没⻅过⾯，彼此之间的通讯⼤多是通过电⼦邮件（lists.debian.org 上的邮件列表）和 IRC（irc.debian.org 上的 #debian 频道）来完成的，⽬前Debian 提供59000多个软件包的维护与更新。
 
@@ -20,7 +20,7 @@ Debian官⽹： https://www.debian.org/
 清华⼤学下载地址： https://mirrors.tuna.tsinghua.edu.cn/debian-cd/10.1.0-live/amd64/isohybrid/
 ```
 ### 1.2：Ubuntu简介
-Ubuntu（友帮拓、优般图、乌班图）早期是⼀个开源的GNU/Linux操作系统，Ubuntu 是基于Debian GNU/Linux，⽀持x86、amd64（即x64）和ppc架构，由全球化的专业开发团队（Canonical Ltd）打造的，其名 称来⾃⾮洲南部祖鲁语或豪萨语的“ubuntu”⼀词，类似儒家“仁爱”的思想，意思是“⼈性”、“我的存在是因为⼤家的 存在”，是⾮洲传统的⼀种价值观， Ubuntu基于Debian发⾏版和GNOME桌⾯环境，⽽从11.04版起，Ubuntu发⾏ 版放弃了Gnome桌⾯环境，改为Unity，与Debian的不同在于它每6个⽉会发布⼀个新版本，Ubuntu的⽬标在于 为⼀般⽤户提供⼀个最新的、同时⼜相当稳定的主要由⾃由软件构建⽽成的操作系统，Ubuntu具有庞⼤的社区⼒ 量，⽤户可以⽅便地从社区获得帮助，Ubuntu对GNU/Linux的普及特别是桌⾯普及作出了巨⼤贡献，由此使更多⼈共享开源的成果与精彩。
+Ubuntu（友帮拓、优般图、乌班图）早期是⼀个开源的GNU/Linux操作系统，Ubuntu 是基于Debian GNU/Linux，⽀持x86、amd64（即x64）和ppc架构，由全球化的专业开发团队（Canonical Ltd）打造的，其名 称来⾃⾮洲南部祖鲁语或豪萨语的“ubuntu”⼀词，类似儒家“仁爱”的思想，意思是“⼈性”、“我的存在是因为⼤家的 存在”，是⾮洲传统的⼀种价值观， Ubuntu基于Debian发⾏版和GNOME桌⾯环境，⽽从11.04版起，Ubuntu发⾏版放弃了Gnome桌⾯环境，改为Unity，与Debian的不同在于它每6个⽉会发布⼀个新版本，Ubuntu的⽬标在 为⼀般⽤户提供⼀个最新的、同时⼜相当稳定的主要由⾃由软件构建⽽成的操作系统，Ubuntu具有庞⼤的社区⼒量，⽤户可以⽅便地从社区获得帮助，Ubuntu对GNU/Linux的普及特别是桌⾯普及作出了巨⼤贡献，由此使更多⼈共享开源的成果与精彩。
 ### 1.3：Ubuntu镜像下载
 Ubuntu哪⾥可以下载的到呢？
 ```txt
@@ -246,7 +246,6 @@ network:
     eth0:
       dhcp4: no
       dhcp6: no
-
   bridges:
     br0:
       dhcp4: no
@@ -264,13 +263,13 @@ network:
     version: 2
     renderer: networkd
     ethernets:
-        enp3s0:
+        eth0:
             dhcp4: no
     bridges:
         br0:
             dhcp4: yes
             interfaces:
-                - enp3s0
+                - eth0
 ```
 更复杂的vlan桥接 [详见示例](https://netplan.io/examples/#configuring-network-bridges)
 ##### 2.2.4.6: 多网卡桥接
@@ -286,7 +285,6 @@ network:
   	eth1:
   	  dhcp4: no
   	  dhcp6: no
-
   bridges:
   	br0:
   	  dhcp4: no
@@ -513,7 +511,132 @@ network:
                   via: 192.168.0.1
 ```
 
+#### 2.2.5：VNC访问图形界面
 
+##### 2.2.5.1：安装软件包
+
+```shell
+#更新软件源
+apt update
+
+#安装桌面环境所需的软件包。软件包包括系统面板、窗口管理器、文件浏览器、终端等桌面应用程序。
+apt install gnome-panel gnome-settings-daemon metacity nautilus gnome-terminal ubuntu-desktop -y 
+
+#Ubuntu18.04运行如下命令安装vnc
+apt-get install vnc4server -y
+
+#Ubuntu20.04运行如下命令安装vnc
+apt-get install tightvncserver -y
+
+#命令启动vnc服务
+vncserver
+```
+
+##### 2.2.5.2：初始化VNC并配置
+
+第一次启动需要设置VNC的登录密码，输入VNC登录密码和确认密码，并在以下提示中输入n，并按Enter。**注意：** `如果您自定义的密码位数大于8位，系统默认只截取前8位作为您的VNC登录密码。`
+
+<img src="https://raw.githubusercontent.com/9206284/Linux/main/img/vncserver-init.png" alt="vncserver-init" style="zoom:50%;" />
+
+命令行回显如下图所示的信息时，表示VNC启动成功。
+
+<img src="https://raw.githubusercontent.com/9206284/Linux/main/img/vncserver-init-success.png" alt="vncserver-init-success" style="zoom:50%;" />
+
+备份vnc的xstartup配置文件
+
+```shell
+cp ~/.vnc/xstartup{,.bak}
+
+```
+
+修改vnc的xstartup配置文件并保存
+
+```shell
+export XKL_XMODMAP_DISABLE=1
+export XDG_CURRENT_DESKTOP="GNOME-Flashback:GNOME"
+export XDG_MENU_PREFIX="gnome-flashback-"
+gnome-session --session=gnome-flashback-metacity --disable-acceleration-check &
+```
+
+##### 2.2.5.3：重启vnc服务
+
+- 关闭已启动的VNC
+
+  ```bash
+  vncserver -kill :1
+  ```
+
+- 启动一个新的VNC，端口号仍然是1
+
+  ```shell
+  vncserver -geometry 1024X768 :1
+  ```
+
+##### 2.2.5.4：使用vnc viewer工具访问
+
+[[ realvnc客户端下载 ]](https://www.realvnc.com/en/connect/download/viewer/)
+
+##### 2.2.5.5：通过SSH隧道访问VNC桌面
+
+- 远程服务器开启VNC服务
+
+  SSH 登录远程服务器，在命令行执行 `vncserver -geometry 1024x768` 来创建会话，输出的最下面的 `:n` (n为一个整数) 就是你创建的会话 ID，初次执行 vncserver 需要创建一个 VNC 登录密码。
+
+  示例如下，此时会话 ID 为 `1`，则 VNC 实际端口为 `5901`。
+
+  ```bash
+  root@kvm-223-69:~# vncserver -geometry 1024x768 :1
+  
+  New 'X' desktop is kvm-223-69:1
+  
+  Starting applications specified in /root/.vnc/xstartup
+  Log file is /root/.vnc/kvm-223-69:1.log
+  ```
+
+- 建立SSH隧道
+
+  远程开启 VNC 桌面后，若为外网访问，且内网服务器只开放了 SSH 端口，可通过 SSH 隧道进行端口转发登录。若 VNC 桌面会话 ID 为 `1`，则其实际端口为 `5901`，于是将远程的 `5901` 端口映射到本地的 `8888` 端口如下。
+
+  ```bash
+  # ssh -N -L <local port>:localhost:<remote port> <SSH hostname>
+  # SSH hostname: -p SSH_Port username@Host_IP
+  # -N  仅仅只用来转发,而不执行远程命令。
+  # -L  进行本地端口转发
+  ssh -N -L 8888:localhost:5901 -p 59783 saw@58.211.18.122
+  ```
+
+- VNC客户端通过 <u>本地端口</u> 访问远程桌面 
+
+  在 VNC Viewer 里面，填入`本地服务器地址:本地端口`，如 `localhost:8888`，输入第一步创建的密码即可登陆图像界面，实现通过访问本地 `8888` 端口登录 VNC 远程桌面的目的。
+
+#### 2.2.6：普通用户sudo免密码
+
+```bash
+#以下ubuntu两处均需修改，否则无效
+
+# User privilege specification
+root    ALL=(ALL:ALL) ALL
+ubuntu     ALL=(ALL:ALL) NOPASSWD: ALL      #针对单独用户修改这里
+# Members of the admin group may gain root privileges
+%admin ALL=(ALL) ALL
+
+# Allow members of group sudo to execute any command
+%sudo   ALL=(ALL:ALL) ALL       						#针对所有sudo用户修改这里，这里未做修改为默认配置
+ubuntu  ALL=(ALL:ALL) NOPASSWD: ALL      		#针对单独用户修改这里
+```
+
+#### 2.2.7： 启用crontab计划日志
+
+ubuntu默认没有开启crontab的计划日志，在/var/log/目录下是不存在cron.log。
+
+修改rsyslog配置文件 /etc/rsyslog.d/50-default.conf
+
+```bash
+#将cron前面的注释符去掉 
+cron.*              /var/log/cron.log 
+```
+
+重启rsyslog
 
 ### 2.3: Ubuntu软件包管理
 
@@ -524,7 +647,8 @@ ubuntu安装、升级、卸载软件包等常规操作。
 中科⼤：http://mirrors.ustc.edu.cn/help/ubuntu.html
 
 ```shell
-sudo sed -i 's/archive.ubuntu.com/mirrors.ustc.edu.cn/g' /etc/apt/sources.list
+cp /etc/apt/sources.list{,.bak}
+sudo sed -i 's/cn.archive.ubuntu.com/mirrors.ustc.edu.cn/g' /etc/apt/sources.list
 ```
 
 阿⾥云仓库地址：https://opsx.alibaba.com/mirror 
@@ -533,23 +657,27 @@ sudo sed -i 's/archive.ubuntu.com/mirrors.ustc.edu.cn/g' /etc/apt/sources.list
 
 华为：https://mirrors.huaweicloud.com/
 
-#### 2.3.2: apt/apt-get
+#### 2.3.2: Apt包管理工具
+
+
 
 ```shell
 # apt list #apt列出仓库软件包，等于yum list 
-# apt search NAME #搜索安装包 
-# apt show apache2 #查看某个安装包的详细信息 
-# apt install apache2 #在线安装软件包 
-# apt remove apache2 #卸载单个软件包但是保留配置⽂件 
-# apt autoremove apache2 #删除安装包并解决依赖关系 
-# apt update #更新本地软件包列表索引，修改了apt仓库后必须执⾏ 
-# apt purge apache2 #卸载单个软件包删除配置⽂件 
+# apt search NAME #搜索安装包 等于 yum search 
+# apt show apache2 #查看某个安装包的详细信息  等于 yum info
+# apt install apache2 #在线安装软件包  等于 yum install
+# apt remove apache2 #卸载单个软件包但是保留配置⽂件 等于 yum remove
+# apt autoremove apache2 #删除安装包并解决依赖关系 等于 yum autoremove
+# apt update #更新本地软件包列表索引，修改了apt仓库后必须执⾏ 等于 yum update
+# apt purge apache2 #卸载单个软件包并且删除配置⽂件 
 # apt upgrade #升级所有已安装且可升级到新版本的软件包 
 # apt full-upgrade #升级整个系统，必要时可以移除旧软件包。 
-# apt edit-sources #编辑source源⽂件
+# apt edit-sources #编辑source源⽂件 等于 vim /etc/apt/sources.list
 
-# apt-cache madison nginx #查看仓库中软件包有哪些版本可以安装 
+# apt-cache madison nginx #查看仓库中软件包有哪些版本可以安装  yumm list --showduplicates
 # apt install nginx=1.18.0-0ubuntu1.2  #安装软件包的时候指定安装具体的版本
+
+# apt-file 等于 yum whatprovides，需要使用命令：apt install apt-file 安装之后才可使用
 ```
 #### 2.3.3: 设置oracle JDK环境
 ```shell
@@ -576,10 +704,13 @@ java -version
 ```shell
 apt install openjdk-8-jdk
 ```
-#### 2.3.5: 安装常用系统命令
+#### 2.3.5: 安装常用软件
 ```shell
-apt purge ufw lxd lxd-client lxcfs lxc-common
-apt install iproute2 ntpdate tcpdump telnet traceroute nfs-kernel-server nfscommon lrzsz tree openssl libssl-dev libpcre3 libpcre3-dev zlib1g-dev gcc openssh-server zlib1g-dev iotop unzip zip
+#卸载软件
+apt purge ufw lxd lxd-client lxcfs lxc-common -y
+
+#安装软件
+apt install iproute2 ntpdate tcpdump telnet traceroute nfs-kernel-server nfs-common lrzsz tree openssl libssl-dev libpcre3 libpcre3-dev zlib1g-dev gcc openssh-server zlib1g-dev iotop unzip zip net-tools -y
 ```
 #### 2.3.6: 系统资源限制优化
 ```shell
@@ -695,7 +826,7 @@ vm.swappiness = 10
 #net.ipv4.conf.all.arp_ignore = 1
 #net.ipv4.conf.all.arp_announce = 2
 ```
-#### 2.3.8: dpkg包管理
+#### 2.3.8: dpkg包管理器
 rpm：RPM(Red Hat Package Manager)，是基于Red hat的Linux Distribution的包管理系统，同时也指rpm包本 身，RPM⽤于rpm包的管理（诸如安装、卸载、升级等）
 
 "dpkg "是"Debian Packager "的简写,为 "Debian"专⻔开发的套件管理系统，⽅便软件的安装、更新及移除。所有 源⾃“Debian”的“Linux ”发⾏版都使⽤ “dpkg”，例如 “Ubuntu”、“Knoppix ”等。
@@ -706,6 +837,7 @@ rpm：RPM(Red Hat Package Manager)，是基于Red hat的Linux Distribution的包
 # dpkg -I gitlab-ce_11.9.8-ce.0_amd64.deb #查看软件包信息 
 # dpkg -c gitlab-ce_11.9.8-ce.0_amd64.deb #查看软件包内的⽂件及⽬录内容 
 # dpkg -l #列出本机已经安装的所有软件
+# dpkg -L #列出已安装的指定包名的所有文件
 ```
 ## 三：Ubuntu Desktop安装及使用
 ### 3.1 环境配置

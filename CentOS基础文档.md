@@ -50,6 +50,24 @@ grub2-install /dev/sdx
 
 #### 2.2.3：CentOS 7网络配置
 
+vim /etc/sysconfig/network-script/ifcfg-eth0
+
+```shell
+#静态地址
+TYPE="Ethernet"
+PROXY_METHOD="none"
+BOOTPROTO="static"
+IPADDR="172.168.223.148"
+NETMASK="255.255.255.0"
+GATEWAY="172.168.223.1"
+DNS1=61.177.7.1
+DNS2=114.114.114.114
+IPV4_FAILURE_FATAL="no"
+NAME="eth0"
+DEVICE="eth0"
+ONBOOT="yes
+```
+
 #### 2.2.4：CentOS 8网络配置
 
 #### 2.2.5：最小化安装centos安装基础命令
@@ -74,11 +92,36 @@ systemctl set-default multi-user.target
 systemctl set-default multi-user.target
 ```
 
-
-
 ### 2.3：CentOS软件包管理
 
 #### 2.3.1：可选软件仓库
+
+使用清华大学镜像源
+
+```shell
+# 首先备份源目录
+cp -r /etc/yum.repos.d /etc/yum.repos.d.bak
+
+# 对于 CentOS 7
+sudo sed -e 's|^mirrorlist=|#mirrorlist=|g' \
+         -e 's|^#baseurl=http://mirror.centos.org|baseurl=https://mirrors.tuna.tsinghua.edu.cn|g' \
+         -i.bak \
+         /etc/yum.repos.d/CentOS-*.repo
+
+# 对于 CentOS 8
+sudo sed -e 's|^mirrorlist=|#mirrorlist=|g' \
+         -e 's|^#baseurl=http://mirror.centos.org/$contentdir|baseurl=https://mirrors.tuna.tsinghua.edu.cn/centos|g' \
+         -i.bak \
+         /etc/yum.repos.d/CentOS-*.repo
+```
+
+注意，如果需要启用其中一些 repo，需要将其中的 `enabled=0` 改为 `enabled=1`。
+
+最后更新软件包缓存
+
+```shell
+sudo yum makecache
+```
 
 #### 2.3.2：yum
 
