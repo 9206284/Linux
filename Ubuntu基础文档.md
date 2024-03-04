@@ -30,14 +30,16 @@ http://cdimage.ubuntu.com/daily-live/current/ #20.04每天镜像
 ```
 #### 1.3.1 系统镜像间区别
 https://packages.ubuntu.com/search?lang=zh-cn&arch=any&keywords=libfuse-dev
-```txt
-ubuntu-18.04.3-live-server-amd64.iso 	#带live，ISO镜像提供不安装就可以试⽤系统的功能 
-ubuntu-18.04.3-server-amd64.iso 		#不带live，不可⽤试⽤，但是可以直接进⾏系统安装
+```ini
+#带live，ISO镜像提供不安装就可以试⽤系统的功能 
+ubuntu-18.04.3-live-server-amd64.iso 	
+#不带live，不可⽤试⽤，但是可以直接进⾏系统安装
+ubuntu-18.04.3-server-amd64.iso 		  
 ```
 #### 1.3.2 不同指令集的ISO镜像
-```txt
-CPU架构			安装包标识				备注
-x86 			i386 					32位，server版本不再支持32位
+```
+CPU架构			安装包标识				 备注
+x86 			  i386 					  32位，server版本不再支持32位
 x86-64			amd64 					64位
 arm v7			ARM64 					arm平台
 IBM s390x		s390x 					IBM System z
@@ -61,55 +63,95 @@ hostnamectl set-hostname ubuntu01
 ```
 #### 2.2.2：更改网卡名称为eth*
 
-如果没有在安装系统之前传递内核参数将⽹卡名称更改为eth*，则可以在安装系统之后修改/etc/default/grub ：
-```shell
-vim /etc/default/grub 
-GRUB_DEFAULT=0 
-GRUB_TIMEOUT_STYLE=hidden 
-GRUB_TIMEOUT=2 
-GRUB_DISTRIBUTOR=`lsb_release -i -s 2> /dev/null || echo Debian` 
-GRUB_CMDLINE_LINUX_DEFAULT=""
-GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0"
+1. 在安装系统之后修改/etc/default/grub，或在安装系统之前传递内核参数将⽹卡名称更改为eth*
 
-或者使用sed命令
-sed -i  's/^GRUB_CMDLINE_LINUX=""$/GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0"/g'  /etc/default/grub
-```
+   ```shell
+   vim /etc/default/grub 
+   GRUB_DEFAULT=0 
+   GRUB_TIMEOUT_STYLE=hidden 
+   GRUB_TIMEOUT=2 
+   GRUB_DISTRIBUTOR=`lsb_release -i -s 2> /dev/null || echo Debian` 
+   GRUB_CMDLINE_LINUX_DEFAULT=""
+   GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0"
+   
+   # 或者使用sed命令
+   head -n11 /etc/default/grub
+   sed -i  's/^GRUB_CMDLINE_LINUX=""$/GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0"/g' /etc/default/grub
+   head -n11 /etc/default/grub
+   ```
 
-```shell
-update-grub
-reboot
+2. 修改网卡配置文件： /etc/netplan/00-installer-config.yaml，将网卡名称修改为eth0之类
 
-```
+3. 生成启动文件
+
+   ```shell
+   # 更新grub
+   update-grub
+   
+   # 重启
+   reboot
+   ```
+
+4. 重启系统，可以看到新网卡后面跟着altname字样指向原设备名称
+
+   ```shell
+   # ip a
+   eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+       link/ether 52:54:00:19:0c:33 brd ff:ff:ff:ff:ff:ff
+       altname enp1s0
+       inet 192.168.223.250/24 brd 192.168.223.255 scope global eth0
+          valid_lft forever preferred_lft forever
+       inet6 fe80::5054:ff:fe19:c33/64 scope link
+          valid_lft forever preferred_lft forever
+   ```
+
+5. 临时修改网卡名称
+
+   ```shell
+   # 实际验证此操作不影响ssh连接
+   # 将旧网卡关闭 && 临时更改网卡名称，服务器重启后网卡名称会还原 && 将新网卡打开
+   ip link set ens160 down && ip link set ens160 name eth0 && ip link set eth0 up
+   
+   ```
+
+
+
 #### 2.2.3：配置root远程登录
+
 默认情况下，ubuntu不允许root⽤户远程ssh，如果有实际场景需要允许root⽤户远程ssh，则需要设置root密 码，并且编辑/etc/ssh/sshd_config⽂件修改如下：
 
 ```shell
 vim /etc/ssh/sshd_config
 
-PermitRootLogin yes #改为允许Root登录
-PasswordAuthentication yes #打开密码认证，其实默认就是允许通过密码认证登录
+PermitRootLogin yes #添加允许Root登录
 
+PasswordAuthentication yes #打开密码认证，默认就是允许通过密码认证登录
+#或者
 PubkeyAuthentication yes #启用密钥认证
 PasswordAuthentication no #关闭密码认证
+
+###免交互方式更改配置
+sed -i '$aPermitRootLogin yes' /etc/ssh/sshd_config        #文件末尾添加允许root登录
+sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/g' /etc/ssh/sshd_config     #启用密钥认证
+sed -i 's/^PasswordAuthentication yes/PasswordAuthentication no/g' /etc/ssh/sshd_config  #关闭密码认证
 ```
 
 ```shell
 #切换到root用户环境
 sudo su - root  
 
-#设置root密码
+#交互式设置root密码
 passwd 
 Enter new UNIX password:
 Retype new UNIX password:
 passwd: password updated successfully
+#或者免交互设置root密码
+echo root | passwd --stdin root
 
 #重启ssh服务并测试root⽤户远程ssh连接
 systemctl restart sshd 
 ```
 #### 2.2.4: Ubuntu 18.04以上网络配置
-
-netplan官网 https://netplan.io/  
-netplan官方范例 https://netplan.io/examples/
 
 ```txt
 Ubuntu 从 17.10 开始，已放弃在 /etc/network/interfaces ⾥固定IP的配置，⽽是改成 netplan ⽅式， 配置⽂件是：/etc/netplan/00-installer-config.yaml，使用netplan apply来应用相关配置。
@@ -134,7 +176,34 @@ dns-nameservers 223.5.5.5
 ~# /etc/init.d/networking restart 
 ~# systemctl restart networking.service
 ```
+
+
+**netplan 与 networkd、NetworkManager 之间的联系**
+
+netplan是一个配置文件管理和生成工具，而networkd（即systemd-networkd）、NetworkManager是具体与内核交互的网络管理工具。从前需要根据不同的管理工具编写网络配置，现在 `Netplan` 将管理工具差异性给屏蔽了。 只需按照 `Netplan` 规范编写 `YAML` 配置，不管底层管理工具是啥，一份配置走天下！
+
+**systemd-networkd**
+
+该服务的配置文件 分别位于： 优先级 最低的 /usr/lib/systemd/network 目录、 优先级居中的 /run/systemd/network 目录、 <font color=orange>优先级最高</font>的 /etc/systemd/network 目录。
+
+[systemd-networkd.service 中文手册](http://www.jinbuguo.com/systemd/systemd-networkd.service.html)
+
+[Ubuntu Manpage: systemd.network - Network configuration](http://manpages.ubuntu.com/manpages/bionic/man5/systemd.network.5.html)
+
+**NetworkManager**
+
+**NetworkManager 由两部分组成：**
+
+- 以超级用户运行的守护进程（network-manager ）；
+- 前端管理程序（network-manager-gnome, network-manager-kde 或者 cnetworkmanager ）；
+
+
+
+netplan官网 https://netplan.io/ 
+netplan官方范例 https://netplan.io/examples/
+
 ##### 2.2.4.1: 单网卡DHCP和静态地址
+
 ```yaml
 network:
     version: 2
@@ -143,7 +212,7 @@ network:
         enp3s0:
             dhcp4: true
 ```
-静态地址配置，还可以提供dns，以及默认路由定义网关。
+静态地址配置，还可以提供dns，以及<font color=blue>通过默认路由来定义网关</font>。<font color=red>这里注意原来gateway4的写法已经废弃</font>。
 ```yaml
 network:
     version: 2
@@ -152,24 +221,46 @@ network:
         enp3s0:
             addresses:
                 - 10.10.10.2/24
-            nameservers:
-                search: [mydomain, otherdomain]
-                addresses: [10.10.10.1, 1.1.1.1]
             routes:
                 - to: default
                   via: 10.10.10.1
+            nameservers:
+                search: [mydomain, otherdomain]
+                addresses: [10.10.10.1, 1.1.1.1]
 ```
+静态地址示例
+```yaml
+# This is the network config written by 'subiquity'
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eth0:
+      dhcp4: false
+      dhcp6: false
+      addresses:
+        - 192.168.223.250/24
+      routes:
+        - to: default
+          via: 192.168.223.1
+      nameservers:
+        addresses:
+          - 61.177.7.1
+          - 114.114.114.114
+```
+
 ##### 2.2.4.2: 多网卡DHCP
+
 ```yaml
 network:
     version: 2
     ethernets:
         enred:
-            dhcp4: yes
+            dhcp4: true
             dhcp4-overrides:
                 route-metric: 100
         engreen:
-            dhcp4: yes
+            dhcp4: true
             dhcp4-overrides:
                 route-metric: 200
 ```
@@ -216,15 +307,15 @@ network:
   renderer: networkd
   ethernets:
     eth0:
-      dhcp4: no
-      dhcp6: no
+      dhcp4: false
+      dhcp6: false
       addresses: [172.18.3.18/16]
       gateway4: 172.18.0.1
       nameservers:
         addresses: [223.6.6.6]
     eth1:
-      dhcp4: no
-      dhcp6: no
+      dhcp4: false
+      dhcp6: false
       addresses: [10.20.3.18/16]
       routes:
         - to: 172.20.0.0/16 
@@ -244,12 +335,12 @@ network:
   renderer: networkd
   ethernets:
     eth0:
-      dhcp4: no
-      dhcp6: no
+      dhcp4: false
+      dhcp6: false
   bridges:
     br0:
-      dhcp4: no
-      dhcp6: no
+      dhcp4: false
+      dhcp6: false
       addresses: [172.18.3.18/16]
       gateway4: 172.18.0.1
       nameservers:
@@ -264,10 +355,10 @@ network:
     renderer: networkd
     ethernets:
         eth0:
-            dhcp4: no
+            dhcp4: false
     bridges:
         br0:
-            dhcp4: yes
+            dhcp4: true
             interfaces:
                 - eth0
 ```
@@ -280,15 +371,15 @@ network:
   renderer: networkd
   ethernets:
   	eth0:
-  	  dhcp4: no
-  	  dhcp6: no
+  	  dhcp4: false
+  	  dhcp6: false
   	eth1:
-  	  dhcp4: no
-  	  dhcp6: no
+  	  dhcp4: false
+  	  dhcp6: false
   bridges:
   	br0:
-  	  dhcp4: no
-  	  dhcp6: no
+  	  dhcp4: false
+  	  dhcp6: false
   	  addresses: [172.18.3.18/16]
   	  gateway4: 172.18.0.1
   	  nameservers:
@@ -296,8 +387,8 @@ network:
   	  interfaces:
   	  	- eth0
   	br1:
-  	  dhcp4: no
-  	  dhcp6: no
+  	  dhcp4: false
+  	  dhcp6: false
   	  addresses: [10.20.3.18/16]
   	  routes:
   	  	- to: 172.20.0.0/16
@@ -310,7 +401,7 @@ network:
 ##### 2.2.4.7: 双网卡绑定
 **七种bond模式说明:**
 ```txt
-第⼀种模式：mod=0，即：(balance-rr) Round-robin policy（平衡抡循环策略） 特点：传输数据包顺序是依次传输（即：第1个包⾛eth0，下⼀个包就⾛eth1….⼀直循环下去，直到最后⼀个传输完 毕），此模式提供负载平衡和容错能⼒。
+第⼀种模式：mod=0，即：(balance-rr) Round-robin policy（平衡抡循环策略） 特点：传输数据包顺序是依次传输（即：第1个包⾛eth0，下⼀个包就⾛eth1….⼀直循环下去，直到最后⼀个传输完毕），此模式提供负载平衡和容错能⼒。
 
 第⼆种模式：mod=1，即： (active-backup) Active-backup policy（主-备份策略） 特点：只有⼀个设备处于活动状态，当⼀个宕掉另⼀个⻢上由备份转换为主设备。mac地址是外部可⻅得，从外⾯看 来，bond的MAC地址是唯⼀的，以避免switch(交换机)发⽣混乱。此模式只提供了容错能⼒；由此可⻅此算法的优点 是可以提供⾼⽹络连接的可⽤性，但是它的资源利⽤率较低，只有⼀个接⼝处于⼯作状态，在有 N 个⽹络接⼝的情况 下，资源利⽤率为1/N。 第三种模式：mod=2，即：(balance-xor) XOR policy（平衡策略） 特点：基于指定的传输HASH策略传输数据包。缺省的策略是：(源MAC地址 XOR ⽬标MAC地址) % slave数量。其他 的传输策略可以通过xmit_hash_policy选项指定，此模式提供负载平衡和容错能⼒。
 
@@ -329,11 +420,11 @@ network:
   renderer: networkd
   ethernets:
   	eth0:
-  	  dhcp4: no
-  	  dhcp6: no
+  	  dhcp4: false
+  	  dhcp6: false
   	eth1:
-  	  dhcp4: no
-  	  dhcp6: no
+  	  dhcp4: false
+  	  dhcp6: false
 
   bonds:
   	bond0:
@@ -354,11 +445,11 @@ network:
   renderer: networkd
   ethernets:
   	eth0:
-  	  dhcp4: no
-  	  dhcp6: no
+  	  dhcp4: false
+  	  dhcp6: false
   	eth1:
-  	  dhcp4: no
-  	  dhcp6: no
+  	  dhcp4: false
+  	  dhcp6: false
 
   bonds:
   	bond0:
@@ -371,8 +462,8 @@ network:
 
   bridges:
   	br0:
-  	  dhcp4: no
-  	  dhcp6: no
+  	  dhcp4: false
+  	  dhcp6: false
   	  addresses: [172.18.3.18/16]
   	  gateway4: 172.18.0.1
   	  nameservers:
@@ -388,17 +479,17 @@ network:
   renderer: networkd
   ethernets:
   	eth0:
-  	  dhcp4: no
-  	  dhcp6: no
+  	  dhcp4: false
+  	  dhcp6: false
   	eth1:
-  	  dhcp4: no
-  	  dhcp6: no
+  	  dhcp4: false
+  	  dhcp6: false
   	eth2:
-  	  dhcp4: no
-  	  dhcp6: no
+  	  dhcp4: false
+  	  dhcp6: false
   	eth3:
-  	  dhcp4: no
-  	  dhcp6: no
+  	  dhcp4: false
+  	  dhcp6: false
 
   bonds:
   	bond0:
@@ -430,17 +521,17 @@ network:
   renderer: networkd
   ethernets:
   	eth0:
-  	  dhcp4: no
-  	  dhcp6: no
+  	  dhcp4: false
+  	  dhcp6: false
   	eth1:
-  	  dhcp4: no
-  	  dhcp6: no
+  	  dhcp4: false
+  	  dhcp6: false
   	eth2:
-  	  dhcp4: no
-  	  dhcp6: no
+  	  dhcp4: false
+  	  dhcp6: false
   	eth3:
-  	  dhcp4: no
-  	  dhcp6: no
+  	  dhcp4: false
+  	  dhcp6: false
 
   bonds:
   	bond0:
@@ -456,8 +547,8 @@ network:
 
   bridges:
   	br0:
-  	  dhcp4: no
-  	  dhcp6: no
+  	  dhcp4: false
+  	  dhcp6: false
   	  addresses: [172.18.3.18/16]
   	  gateway4: 172.18.0.1
   	  nameservers:
@@ -465,8 +556,8 @@ network:
   	  interfaces:
   	  	- bond0
   	br1:
-  	  dhcp4: no
-  	  dhcp6: no
+  	  dhcp4: false
+  	  dhcp6: false
   	  interfaces:
   	  	- bond1
   	  addresses: [10.20.3.18/16]
@@ -486,7 +577,7 @@ network:
         wlan0:
                 access-points:
                         opennetwork: {}
-                dhcp4: yes
+                dhcp4: true
 ```
 
 ##### 2.2.4.12: WPA 个人无线网络
@@ -497,8 +588,8 @@ network:
     renderer: networkd
     wifis:
         wlp2s0b1:
-            dhcp4: no
-            dhcp6: no
+            dhcp4: false
+            dhcp6: false
             addresses: [192.168.0.21/24]
             nameservers:
                 addresses: [192.168.0.1, 8.8.8.8]
@@ -576,7 +667,7 @@ gnome-session --session=gnome-flashback-metacity --disable-acceleration-check &
 
 [[ realvnc客户端下载 ]](https://www.realvnc.com/en/connect/download/viewer/)
 
-##### 2.2.5.5：通过SSH隧道访问VNC桌面
+##### 2.2.5.5：通过SSH隧道访问VNC桌面（有用）
 
 - 远程服务器开启VNC服务
 
@@ -616,16 +707,16 @@ gnome-session --session=gnome-flashback-metacity --disable-acceleration-check &
 
 # User privilege specification
 root    ALL=(ALL:ALL) ALL
-ubuntu     ALL=(ALL:ALL) NOPASSWD: ALL      #针对单独用户修改这里
+saw     ALL=(ALL:ALL) NOPASSWD: ALL      #针对单独用户修改这里
 # Members of the admin group may gain root privileges
 %admin ALL=(ALL) ALL
 
 # Allow members of group sudo to execute any command
 %sudo   ALL=(ALL:ALL) ALL       						#针对所有sudo用户修改这里，这里未做修改为默认配置
-ubuntu  ALL=(ALL:ALL) NOPASSWD: ALL      		#针对单独用户修改这里
+saw  ALL=(ALL:ALL) NOPASSWD: ALL      		#针对单独用户修改这里
 ```
 
-#### 2.2.7： 启用crontab计划日志
+#### 2.2.7：启用crontab计划日志
 
 ubuntu默认没有开启crontab的计划日志，在/var/log/目录下是不存在cron.log。
 
@@ -634,9 +725,101 @@ ubuntu默认没有开启crontab的计划日志，在/var/log/目录下是不存�
 ```bash
 #将cron前面的注释符去掉 
 cron.*              /var/log/cron.log 
+
+#sed命令一行搞定
+sed -i 's/^#cron.\*/cron.*/g' /etc/rsyslog.d/50-default.conf  && systemctl restart rsyslog && systemctl status rsyslog
 ```
 
-重启rsyslog
+systemctl  restart  rsyslog
+
+#### 2.2.8：修改时区、24小时、时间同步
+
+```shell
+###修改时区，两种方法
+# 方法1:
+timedatectl set-timezone Asia/Shanghai
+# 方法2:
+ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+
+###修改24小时 /etc/default/locale
+cat /etc/default/locale 
+cat <<EOF >>/etc/default/locale 
+LC_TIME=C.UTF-8
+EOF
+cat /etc/default/locale 
+
+###时间同步，使用计划任务
+# 方法1直接添加root的计划任务，
+tail -n1 /var/spool/cron/crontabs/root
+echo '*/5 *  *   *   *  /usr/sbin/ntpdate time1.aliyun.com &> /dev/null && /sbin/hwclock -w &> /dev/null' >>/var/spool/cron/crontabs/root
+tail -n2 /var/spool/cron/crontabs/root
+# 方法2使用命令 crontab -e，编辑计划任务
+*/5 *  *   *   *  /usr/sbin/ntpdate time1.aliyun.com &> /dev/null && /sbin/hwclock -w &> /dev/null
+```
+
+#### 2.2.9：配置pppoe拨号
+
+```shell
+#安装pppoe套件
+apt install pppoeconf
+
+#PPPOE设定，执行此程序会扫描服务器上网卡线路，此时应保证已连接上PPPOE线路。
+pppoeconf
+
+#接着选择“YES”——是否使用常用PPPoe拨号选项，然后输入账号，输入密码，再次选择“YES”——将网络供应商的DNS加入 DNS resolv列表中，“YES”——使用预设的MSS值，“YES”——开机是否直接進行拨号上网，“YES”——现在是否拨号上网。
+```
+
+```shell
+#手动拨号
+pon dsl-provider
+
+#中断连线
+poff -a
+
+#确认拨号状态及IP
+plog #查看状态
+ip address show ppp0 #查看IP
+```
+
+#### 2.2.10：设置HISTORY记录时间戳并清空日志
+
+```shell
+#设置HISTORY记录时间戳
+echo 'export HISTTIMEFORMAT="%F %T  "' >> /etc/profile
+
+#清空日志
+ rm -rf /var/log/journal/*
+ rm -f  /var/log/dmesg.*
+ rm -f /var/log/apt/*
+ > /var/log/btmp
+ > /var/log/wtmp
+ > /var/log/lastlog
+ > /var/log/syslog
+ > /var/log/auth.log
+ > /var/log/faillog
+ > /var/log/dmesg
+ > /var/log/dpkg.log
+ > /root/.bash_history
+ > /root/.bash_logout
+ > /home/saw/.bash_history
+ history -c
+```
+
+#### 2.2.11：关闭swap
+
+```shell
+# 临时关闭swap
+swapoff -a
+
+# 永久关闭swap分区
+sed -i 's@\/swap.img@#/swap.img@g' /etc/fstab
+
+# 检查swap关闭情况
+free -g
+
+```
+
+
 
 ### 2.3: Ubuntu软件包管理
 
@@ -647,8 +830,75 @@ ubuntu安装、升级、卸载软件包等常规操作。
 中科⼤：http://mirrors.ustc.edu.cn/help/ubuntu.html
 
 ```shell
+#备份原仓库源
 cp /etc/apt/sources.list{,.bak}
-sudo sed -i 's/cn.archive.ubuntu.com/mirrors.ustc.edu.cn/g' /etc/apt/sources.list
+
+
+#下面替换命令根据实际情况archive.ubuntu.com还是cn.archive.ubuntu.com进行命令替换，这里替换后使用的中科大源。
+sed -i 's/cn.archive.ubuntu.com/mirrors.ustc.edu.cn/g' /etc/apt/sources.list && apt update
+# sudo sed -i 's/archive.ubuntu.com/mirrors.ustc.edu.cn/g' /etc/apt/sources.list
+
+
+# 下面使用清华镜像源仓库，适用于 Ubuntu18.04
+cat <<EOF > /etc/apt/sources.list
+# 默认注释了源码镜像以提高 apt update 速度，如有需要可自行取消注释
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic main restricted universe multiverse
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic main restricted universe multiverse
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-updates main restricted universe multiverse
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-updates main restricted universe multiverse
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-backports main restricted universe multiverse
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-backports main restricted universe multiverse
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-security main restricted universe multiverse
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-security main restricted universe multiverse
+EOF
+
+
+# 下面使用清华镜像源仓库，适用于 Ubuntu20.04
+cat <<EOF > /etc/apt/sources.list
+# 默认注释了源码镜像以提高 apt update 速度，如有需要可自行取消注释
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal main restricted universe multiverse
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal main restricted universe multiverse
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal-updates main restricted universe multiverse
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal-updates main restricted universe multiverse
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal-backports main restricted universe multiverse
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal-backports main restricted universe multiverse
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal-security main restricted universe multiverse
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal-security main restricted universe multiverse
+EOF
+
+# 下面使用清华镜像源仓库，适用于 Ubuntu22.04
+# 默认注释了源码镜像以提高 apt update 速度，如有需要可自行取消注释
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy main restricted universe multiverse
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy main restricted universe multiverse
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy-updates main restricted universe multiverse
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy-updates main restricted universe multiverse
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy-backports main restricted universe multiverse
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy-backports main restricted universe multiverse
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy-security main restricted universe multiverse
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy-security main restricted universe multiverse
+# 预发布软件源，不建议启用
+# deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy-proposed main restricted universe multiverse
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy-proposed main restricted universe multiverse
+
+
+# 下面使用阿里云源仓库，适用于 Ubuntu20.04
+cat <<EOF > /etc/apt/sources.list
+#  阿里源 ubuntu 20.04(focal)
+deb http://mirrors.aliyun.com/ubuntu/ focal main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ focal main restricted universe multiverse
+
+deb http://mirrors.aliyun.com/ubuntu/ focal-security main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ focal-security main restricted universe multiverse
+
+deb http://mirrors.aliyun.com/ubuntu/ focal-updates main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ focal-updates main restricted universe multiverse
+
+deb http://mirrors.aliyun.com/ubuntu/ focal-proposed main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ focal-proposed main restricted universe multiverse
+
+deb http://mirrors.aliyun.com/ubuntu/ focal-backports main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ focal-backports main restricted universe multiverse
+EOF
 ```
 
 阿⾥云仓库地址：https://opsx.alibaba.com/mirror 
@@ -658,8 +908,6 @@ sudo sed -i 's/cn.archive.ubuntu.com/mirrors.ustc.edu.cn/g' /etc/apt/sources.lis
 华为：https://mirrors.huaweicloud.com/
 
 #### 2.3.2: Apt包管理工具
-
-
 
 ```shell
 # apt list #apt列出仓库软件包，等于yum list 
@@ -690,29 +938,62 @@ ln -sv /usr/local/src/jdk1.8.0_212 /usr/local/jdk
 
 #配置环境变量：
 cat <<EOF >> /etc/profile
-export JAVA_HOME=/usr/local/jdk 
-export PATH=\$JAVA_HOME/bin:\$JAVA_HOME/jre/bin:\$PATH 
+#jdk所在目录
+export JAVA_HOME=/usr/local/jdk
+#jre所在目录 
+export PATH=\$JAVA_HOME/bin:\$JAVA_HOME/jre/bin:\$PATH
 export CLASSPATH=.\$CLASSPATH:\$JAVA_HOME/lib:\$JAVA_HOME/jre/lib:\$JAVA_HOME/lib/tools.jar
 EOF
 
-#重新导⼊环境变量并验证：
+#重新导⼊环境变量
 source /etc/profile 
+
+#查看当前系统正在使用的java版本
 java -version
 
+# 发现并不是新安装的jdk版本，使用命令更改当前系统使用的jdk版本
+update-alternatives --config java
+
+# 如没有新安装的1.8.0版本jdk，使用命令将新安装的jdk放入到java bin中
+# --install <link> <name> <path> <priority>
+update-alternatives --install /usr/bin/java java /usr/local/jdk/bin/java 2
+
+# 移除
+update-alternatives --remove java /usr/local/jdk/bin/java
+
 ```
-#### 2.3.4: 安装OpenJDK
+#### 2.3.4: 安装JDK
 ```shell
+# 1. oracle jdk
+# oracle下载 jdk的二进制包
+# https://www.oracle.com/java/technologies/downloads/
+sudo mkdir -p /usr/lib/jvm  #为 JDK 建立一个目录
+sudo tar zxvf jdk-version-linux-x64.tar.gz -C /usr/lib/jvm   #解压安装JDK
+sudo update-alternatives --install "/usr/bin/java" "java" "/usr/lib/jvm/jdk1.8.0_version/bin/java" 1 #告知系统有一个可用的新版本
+sudo update-alternatives --set java /usr/lib/jvm/jdk1.8.0_version/bin/java #设置新jdk为默认
+java -version  #验证版本
+
+
+# 2. openjdk
 apt install openjdk-8-jdk
 ```
 #### 2.3.5: 安装常用软件
 ```shell
-#卸载软件
-apt purge ufw lxd lxd-client lxcfs lxc-common -y
+#卸载软件（20.04版本）
+apt update && apt purge ufw lxd lxd-client lxcfs lxc-common -y
 
-#安装软件
-apt install iproute2 ntpdate tcpdump telnet traceroute nfs-kernel-server nfs-common lrzsz tree openssl libssl-dev libpcre3 libpcre3-dev zlib1g-dev gcc openssh-server zlib1g-dev iotop unzip zip net-tools -y
+#安装软件(20.04版本)
+apt update && apt-get install iproute2 ntpdate tcpdump telnet traceroute lrzsz tree openssl libssl-dev libpcre3 libpcre3-dev gcc openssh-server zlib1g-dev iotop unzip zip net-tools chrony nfs-common -y && apt autoremove -y
+
+# nfs-kernel-server nfs-common
+
+#卸载软件（22.04版本）
+apt-get purge ufw lxcfs liblxc-common -y
+#安装软件（22.04版本）
+apt-get install iproute2 ntpdate tcpdump telnet traceroute lrzsz tree openssl libssl-dev libpcre3 libpcre3-dev gcc openssh-server zlib1g-dev iotop unzip zip net-tools chrony nfs-common -y && apt autoremove -y
+安装时  systemd-timesyncd 安装包将被移除，应该是与ntpdate冲突了
 ```
-#### 2.3.6: 系统资源限制优化
+#### 2.3.6: 系统资源限制优化 ✅
 ```shell
 cat  /etc/security/limits.conf
 
@@ -740,7 +1021,7 @@ root 		hard 	msgqueue 	8192000
 * 		soft 	msgqueue 	8192000
 * 		hard 	msgqueue 	8192000
 ```
-#### 2.3.7: 内核参数优化
+#### 2.3.7: 内核参数优化 ✅
 ```shell
 # Controls source route verification 
 net.ipv4.conf.default.rp_filter = 1 
@@ -838,15 +1119,264 @@ rpm：RPM(Red Hat Package Manager)，是基于Red hat的Linux Distribution的包
 # dpkg -c gitlab-ce_11.9.8-ce.0_amd64.deb #查看软件包内的⽂件及⽬录内容 
 # dpkg -l #列出本机已经安装的所有软件
 # dpkg -L #列出已安装的指定包名的所有文件
+
 ```
+#### 2.3.9: 安装python2和python3并设置默认 ✅
+
+以下以20.04版本为例
+
+```shell
+# 1.查看当前系统可用python版本
+ls /usr/bin/python* 
+
+# 2. 安装python2
+apt update
+apt install python2
+
+# 3. 查看是否已有一些python的供选方案
+update-alternatives --list python
+# 在这一步中，将设置两个 Python 版本方案，分别由 Python2 和 Python3 执行。命令：
+update-alternatives --install /usr/bin/python python /usr/bin/python2 1
+update-alternatives --install /usr/bin/python python /usr/bin/python3 2
+# 查看python的可选方案
+update-alternatives --list python
+/usr/bin/python2
+/usr/bin/python3
+
+# 更改python 版本。例如要更改为 Python2，请执行以下命令，将选择通过上下键移动或者直接输入数字
+update-alternatives --config python
+There are 2 choices for the alternative python (providing /usr/bin/python).
+
+  Selection    Path              Priority   Status
+------------------------------------------------------------
+* 0            /usr/bin/python3   2         auto mode
+  1            /usr/bin/python2   1         manual mode
+  2            /usr/bin/python3   2         manual mode
+
+Press  to keep the current choice[*], or type selection number: 1
+
+# 验证python版本
+python -V
+```
+
+#### 2.3.10：安装pip2和pip3
+
+```shell
+# 1.下载与python版本相同的pip脚本
+curl https://bootstrap.pypa.io/pip/2.7/get-pip.py -o get-pip2.7.py #python2.7
+curl https://bootstrap.pypa.io/pip/3.6/get-pip.py -o get-pip3.8.py  #python3.8
+
+# 2.运行安装脚本
+/usr/bin/python2  get-pip2.7.py
+/usr/bin/python3  get-pip3.8.py
+
+# 3. 验证：手动切换python版本之后，对应pip版本也会改变
+python --version
+pip --version
+
+# 4. pip仓库加速
+mkdir ~/.pip
+cat<<EOF > ~/.pip/pip.conf 
+[global]
+timeout = 600
+index.url = http://mirrors.aliyun.com/pypi/simple
+trusted-host = mirrors.aliyun.com
+EOF
+```
+
+#### 2.3.11：iptables 持久化
+
+Debian系发行版默认不开启iptables。正常情况，写入的 iptables规则将在系统重启时消失，即使使用iptables-save命令将iptables规则存储到文件，在系统重启后也需要执行iptables-restore操作来恢复原有规则。
+
+这里有一个更好的iptables持久化方案，即`netfilter-persistent`工具，<font color=brown>`netfilter-persistent`</font> 加载 `ipset-persistent` 和 `iptables-persistent` 保存的规则。
+
+- **静默安装**：  ipset-persistent 和 iptables-persistent 安装过程中会弹出交互窗，选择是否自动保存规则。在安装前，用 `debconf-set-selections` 在 debconf 数据库中插入对应的内容，即可实现无交互静默安装。
+
+  ```shell
+  # debconf-set-selections 配置语法
+  {包名} {配置项key} {配置项类型} {配置项value}
+  
+  # 1. 生成的配置如下
+  debconf-set-selections <<EOF
+  ipset-persistent ipset-persistent/autosave boolean true
+  iptables-persistent iptables-persistent/autosave_v4 boolean true
+  iptables-persistent iptables-persistent/autosave_v6 boolean true
+  EOF
+  
+  # 2. 执行安装
+  apt install netfilter-persistent ipset-persistent iptables-persistent -y 
+  
+  # 3. 开机自启动
+  systemctl enable netfilter-persistent
+  systemctl start netfilter-persistent
+  
+  # 4. 手动保存规则
+  netfilter-persistent save
+  #iptables持久化保持的文件在  /etc/iptables/rules.v4 和  /etc/iptables/rules.v6
+  #
+  ```
+
+- Ubuntu 上软件包安装配置项归 `debconf` 管理，在一台机器上交互安装完成后，用 `debconf-show` 查看软件包的配置项。
+
+  ```shell
+  debconf-show ipset-persistent
+  * ipset-persistent/autosave: true
+  
+  debconf-show iptables-persistent
+  * iptables-persistent/autosave_v4: true
+  * iptables-persistent/autosave_v6: true
+  
+  ```
+
+clst自定义规则
+
+```shell
+#目标是限制SSH来源
+
+iptables -F INPUT
+iptables -N SSH-IN 
+iptables -A SSH-IN -s 221.224.170.222/32 -m comment --comment "from office 7-8" -j ACCEPT 
+iptables -A SSH-IN -s 192.168.1.0/24 -m comment --comment "from lan access" -j ACCEPT 
+
+
+iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+iptables -A INPUT -i lo -m comment --comment "Allow loopback" -j ACCEPT
+iptables -A INPUT -p tcp -m tcp --dport 22 -m state --state NEW -m comment --comment "SSH Control" -j SSH-IN
+iptables -A INPUT -p icmp -m comment --comment "allow ICMP" -j ACCEPT
+
+iptables -A SSH-IN -m comment --comment "Default reject rule" -j REJECT --reject-with icmp-port-unreachable 
+iptables -A INPUT -m comment --comment "Default reject" -j REJECT --reject-with icmp-port-unreachable 
+
+netfilter-persistent save
+```
+
+DNAT规则
+
+```shell
+# 宿主机有外网br0口，内网br1口
+# 虚拟机部署了kubefate服务，桥接内网br1口，地址192.168.1.100，需要向几个固定来源地址暴露 9370/8080/8350/20000 端口，即DNAT
+# 以下命令均在宿主机执行，首先是DNAT
+iptables -t nat -A PREROUTING -s 36.111.134.13/32 -p tcp -m tcp --dport 9370 -j DNAT --to-destination 192.168.1.100:9370
+iptables -t nat -A PREROUTING -s 221.224.170.222/32 -p tcp -m tcp --dport 9370 -j DNAT --to-destination 192.168.1.100:9370
+iptables -t nat -A PREROUTING -s 122.193.30.34/32 -p tcp -m tcp --dport 8080 -j DNAT --to-destination 192.168.1.100:8080
+iptables -t nat -A PREROUTING -s 122.193.30.34/32 -p tcp -m tcp --dport 8350 -j DNAT --to-destination 192.168.1.100:8350
+iptables -t nat -A PREROUTING -s 122.193.30.34/32 -p tcp -m tcp --dport 20000 -j DNAT --to-destination 192.168.1.100:20000
+
+# 同时虚拟机还需要借用宿主机的br0口能上网，需要做SNAT
+# 所有来源地址192.168.1.0/24的上网做地址伪装
+iptables -t nat -A POSTROUTING -s 192.168.1.0/24 -o br0 -j MASQUERADE
+
+# 查看验证nat表
+iptables -L -n --line -t nat
+iptables -t nat -vnL
+```
+
+
+
+
+
+一键清除iptables规则
+
+```shell
+iptables -F
+iptables -X
+iptables -Z
+iptables -P INPUT ACCEPT
+iptables -P OUTPUT ACCEPT
+iptables -P FORWARD ACCEPT
+```
+
+清除docker的规则和链，<font color=red>清理之前需要停止相关docker服务</font>。
+
+```shell
+# iptables -t nat -F DOCKER: 清除 DOCKER 链中的所有规则。
+# iptables -t nat -X DOCKER: 删除 DOCKER 链。
+iptables -t nat -F DOCKER
+iptables -t nat -X DOCKER
+
+# 单独处理NAT表中PREROUTING、OUTPUT、POSTROUTING的规则链
+iptables -t nat -D PREROUTING -m addrtype --dst-type LOCAL -j DOCKER
+iptables -t nat -D OUTPUT ! -d 127.0.0.0/8 -m addrtype --dst-type LOCAL -j DOCKER
+iptables -t nat -D POSTROUTING -s 172.17.0.0/16 ! -o docker0 -j MASQUERADE
+
+```
+
+
+
+#### 2.3.12：tftp服务器安装
+
+```shell
+# 安装
+apt update &&  apt install tftpd-hpa
+
+# 配置，编辑配置文件 /etc/default/tftpd-hpa
+TFTP_USERNAME="tftp"
+TFTP_DIRECTORY="/srv/tftp"
+TFTP_ADDRESS="0.0.0.0:69"
+#TFTP_OPTIONS="--secure"
+TFTP_OPTIONS="-l -c -s"
+
+# 修改目录权限
+chmod -R 777 /var/lib/tftpboot
+
+# 重启服务生效配置,需要知道的是tftp工作在udp 69端口
+systemctl restart tftpd-hpa
+
+```
+
+
+
+
+
+### 2.4：关闭自动更新与版本滚动升级
+
+```shell
+apt update -y && apt upgrade -y && apt autoremove -y
+do-release-upgrade
+```
+
+```shell
+#查看已有内核
+dpkg --list|grep linux-image
+dpkg --list|grep linux-headers
+#查看当前使用内核版本
+uname -r
+
+#卸载内核
+apt purge linux-image-xxx #xxx 表示版本数字
+apt purge linux-image-5.4.0-100-generic
+apt purge linux-headers-xxx
+apt autoremove #自动删除不用的软件包
+update-grub    #卸载完内核后需要执行下列命令更新gurb
+
+#关闭内核的自动更新
+---命令方式
+apt-mark hold linux-image-5.15.0-56-generic
+apt-mark hold linux-image-generic
+apt-mark hold linux-headers-generic
+apt-mark hold linux-headers-5.15.0-56-generic
+apt-mark hold linux-headers-5.15.0-56
+---修改文件方式
+vim /etc/apt/apt.conf.d/10periodic
+APT::Periodic::Update-Package-Lists "0";
+APT::Periodic::Download-Upgradeable-Packages "0";
+APT::Periodic::AutocleanInterval "0";
+vim /etc/apt/apt.conf.d/20auto-upgrades
+APT::Periodic::Update-Package-Lists "0";
+APT::Periodic::Unattended-Upgrade "0";
+```
+
+
+
 ## 三：Ubuntu Desktop安装及使用
+
 ### 3.1 环境配置
 ```txt
 1、设置软件源及安装常⽤命令： 
 https://opsx.alibaba.com/mirror
 
 sudo apt-get install build-essential cmake pkg-config qt4-qmake libqt4-dev desktopfile-utils \ 
-libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libasound2-dev libpulse-dev libjack-jackd2-dev \ 
+libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libasound2-dev libpulse-dev libjack-jackd2-dev \
 libgl1-mesa-dev libglu1-mesa-dev libx11-dev libxfixes-dev libxext-dev libxi-dev libxinerama-dev
 
 2、系统更新及配置中⽂语⾔环境：
